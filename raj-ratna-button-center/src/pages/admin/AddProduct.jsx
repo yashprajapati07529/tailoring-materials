@@ -205,7 +205,7 @@ const AddProduct = () => {
             {/* Stock */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Stock
+                Pieces in Stock
               </label>
 
               <input

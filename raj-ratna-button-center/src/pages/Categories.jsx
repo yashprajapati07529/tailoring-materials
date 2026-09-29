@@ -9,7 +9,7 @@ const Categories = () => {
     ["Zippers", "🤐"],
     ["Hooks", "🪝"],
     ["Threads", "🪡"],
-    ["Beads", "💎"],
+    ["Cenvas", "💎"],
     ["Buckles", "🔗"],
   ];
 
