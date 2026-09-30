@@ -1,108 +1,76 @@
-import {
-  useState,
-} from "react";
-
-import {
-  Link,
-  useNavigate,
-} from "react-router-dom";
-
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const [formData, setFormData] =
-    useState({
-      name: "",
-      email: "",
-      phone: "",
-      password: "",
-    });
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]:
-        e.target.value,
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const {
-      name,
-      email,
-      phone,
-      password,
-    } = formData;
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
 
-    if (
-      !name.trim() ||
-      !email.trim() ||
-      !phone.trim() ||
-      !password.trim()
-    ) {
-      toast.error(
-        "Please fill all fields"
-      );
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const usersResponse =
-        await axios.get(
-          "http://localhost:5000/users"
-        );
-
-      const exists =
-        usersResponse.data.some(
-          (user) =>
-            user.email
-              ?.toLowerCase()
-              .trim() ===
-            email
-              .toLowerCase()
-              .trim()
-        );
-
-      if (exists) {
-        toast.error(
-          "Email already registered"
-        );
-        return;
-      }
-
-      await axios.post(
-        "http://localhost:5000/users",
+      const response = await axios.post(
+        "http://localhost:4000/api/auth/register",
         {
-          name: name.trim(),
-          email:
-            email.trim().toLowerCase(),
-          phone: phone.trim(),
-          password,
-          role: "user",
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
         }
       );
 
-      toast.success(
-        "Registration successful"
-      );
+      if (response.data.success) {
+        // Save logged-in user
+        login(response.data.user);
 
-      navigate("/login");
+        // Save token
+        localStorage.setItem(
+          "rajRatnaToken",
+          response.data.token
+        );
 
+        toast.success("Registration successful!");
+
+        navigate("/");
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Register Error:", error);
 
       toast.error(
-        "Registration failed"
+        error.response?.data?.message ||
+          "Registration failed."
       );
     } finally {
       setLoading(false);
@@ -110,61 +78,41 @@ const Register = () => {
   };
 
   return (
-    <section className="flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
 
-      <div className="w-full max-w-2xl rounded-3xl border border-gray-200 bg-white p-6 shadow-xl sm:p-10">
-
-        <div className="mb-8 text-center">
-
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-600 font-black text-white">
-            RR
-          </div>
-
-          <h1 className="mt-5 text-3xl font-black">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-900">
             Create Account
           </h1>
 
-          <p className="mt-2 text-gray-500">
-            Register as a customer.
+          <p className="text-slate-500 mt-2">
+            Register with Raj Ratna Button Center
           </p>
-
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="grid gap-5 sm:grid-cols-2"
+          className="space-y-5"
         >
-
           <div>
-            <label className="mb-2 block text-sm font-bold">
+            <label className="block text-sm font-semibold mb-2">
               Full Name
             </label>
 
             <input
+              type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Your name"
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-red-500"
+              placeholder="Enter your name"
+              required
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-bold">
-              Phone
-            </label>
-
-            <input
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="9876543210"
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-red-500"
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="mb-2 block text-sm font-bold">
+            <label className="block text-sm font-semibold mb-2">
               Email
             </label>
 
@@ -173,13 +121,30 @@ const Register = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="you@example.com"
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-red-500"
+              placeholder="example@gmail.com"
+              required
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100"
             />
           </div>
 
-          <div className="sm:col-span-2">
-            <label className="mb-2 block text-sm font-bold">
+          <div>
+            <label className="block text-sm font-semibold mb-2">
+              Phone Number
+            </label>
+
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="Enter phone number"
+              required
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-2">
               Password
             </label>
 
@@ -188,34 +153,50 @@ const Register = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Create password"
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-red-500"
+              placeholder="Minimum 6 characters"
+              required
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-2">
+              Confirm Password
+            </label>
+
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="Confirm password"
+              required
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100"
             />
           </div>
 
           <button
+            type="submit"
             disabled={loading}
-            className="sm:col-span-2 rounded-xl bg-red-600 py-3.5 font-bold text-white hover:bg-red-700 disabled:opacity-60"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-60"
           >
             {loading
-              ? "Creating..."
+              ? "Creating Account..."
               : "Create Account"}
           </button>
-
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-slate-500 mt-6">
           Already have an account?{" "}
           <Link
             to="/login"
-            className="font-bold text-red-600"
+            className="text-red-600 font-semibold hover:underline"
           >
             Login
           </Link>
         </p>
-
       </div>
-    </section>
+    </div>
   );
 };
 

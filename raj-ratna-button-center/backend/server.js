@@ -5,7 +5,23 @@ const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
 
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const User = require("./models/user");
+
 dotenv.config();
+
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("✅ MongoDB connected successfully");
+  })
+  .catch((error) => {
+    console.error("❌ MongoDB connection failed:");
+    console.error(error.message);
+  });
 
 const app = express();
 
@@ -17,7 +33,8 @@ const PORT = 4000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
   })
 );
 
@@ -108,6 +125,184 @@ app.get("/", (req, res) => {
     message:
       "Raj Ratna Button Center Backend is running",
   });
+});
+
+// ===============================
+// REGISTER API
+// ===============================
+
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      phone,
+      password,
+    } = req.body;
+
+    // Validation
+    if (!name || !email || !phone || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required.",
+      });
+    }
+
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters.",
+      });
+    }
+
+    // Check existing user
+    const existingUser = await User.findOne({
+      email: cleanEmail,
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered.",
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(
+      password,
+      10
+    );
+
+    // Create user
+    const user = await User.create({
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      password: hashedPassword,
+      role: "user",
+    });
+
+    // Create JWT
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Registration successful!",
+      token,
+
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Register Error:");
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Registration failed.",
+    });
+  }
+});
+
+
+// ===============================
+// LOGIN API
+// ===============================
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const {
+      email,
+      password,
+    } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required.",
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Find user
+    const user = await User.findOne({
+      email: cleanEmail,
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
+
+    // Compare password
+    const passwordMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
+
+    // JWT
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful!",
+
+      token,
+
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Login Error:");
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Login failed.",
+    });
+  }
 });
 
 // ========================================

@@ -262,5 +262,17 @@
     "quantity": "Cancil Zipper: 4",
     "message": "Product Enquiry\n\nSelected Products:\n\n1. Cancil Zipper\nCategory: Zippers\nQuantity: 4\nPrice: ₹250\nEstimated Amount: ₹1000\n\nTotal Products: 1\nTotal Quantity: 4\nEstimated Total: ₹1000\n\nCustomer Message:\nzipper",
     "createdAt": "2026-09-29T05:56:21.293Z"
+  },
+  {
+    "id": 1790746725553,
+    "type": "Product Enquiry",
+    "name": "Yash Prajapati",
+    "email": "yashprajapati@gmail.com",
+    "phone": "8780005274",
+    "subject": "Product Enquiry - 1 Product(s)",
+    "product": "Cancil Zipper",
+    "quantity": "Cancil Zipper: 1",
+    "message": "Product Enquiry\n\nSelected Products:\n\n1. Cancil Zipper\nCategory: Zippers\nQuantity: 1\nPrice: ₹250\nEstimated Amount: ₹250\n\nTotal Products: 1\nTotal Quantity: 1\nEstimated Total: ₹250\n\nCustomer Message:\nzipper",
+    "createdAt": "2026-09-30T05:38:45.553Z"
   }
 ]

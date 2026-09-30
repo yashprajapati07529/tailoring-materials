@@ -16,6 +16,7 @@ const Login = () => {
 
   const [loading, setLoading] = useState(false);
 
+  // Input change
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -23,139 +24,144 @@ const Login = () => {
     });
   };
 
+  // Login
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.email || !formData.password) {
-      toast.error("Please enter email and password");
+    if (!formData.email.trim()) {
+      toast.error("Please enter your email.");
+      return;
+    }
+
+    if (!formData.password.trim()) {
+      toast.error("Please enter your password.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const response = await axios.get(
-        `http://localhost:5000/users?email=${encodeURIComponent(
-          formData.email.trim()
-        )}&password=${encodeURIComponent(formData.password)}`
+      // MongoDB Backend Login API
+      const response = await axios.post(
+        "http://localhost:4000/api/auth/login",
+        {
+          email: formData.email.trim(),
+          password: formData.password,
+        }
       );
 
-      if (response.data.length === 0) {
-        toast.error("Invalid email or password");
-        return;
-      }
+      console.log("Login Response:", response.data);
 
-      const user = response.data[0];
+      if (response.data.success) {
+        // Save user in AuthContext
+        login(response.data.user);
 
-      login(user);
+        // Save JWT token
+        localStorage.setItem(
+          "rajRatnaToken",
+          response.data.token
+        );
 
-      toast.success(
-        user.role === "admin"
-          ? "Admin login successful!"
-          : "Login successful!"
-      );
+        toast.success("Login successful!");
 
-      if (user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/");
+        // Admin → Admin Dashboard
+        if (response.data.user.role === "admin") {
+          navigate("/admin");
+        } else {
+          // Normal User → Home
+          navigate("/");
+        }
       }
     } catch (error) {
       console.error("Login Error:", error);
-      toast.error("Server error. Please start JSON Server.");
+
+      toast.error(
+        error.response?.data?.message ||
+          "Login failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
 
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-xl p-6 sm:p-8">
-
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto rounded-full bg-red-600 text-white flex items-center justify-center text-xl font-bold shadow-lg">
-              RR
-            </div>
-
-            <h1 className="text-2xl font-bold text-gray-900 mt-4">
-              Welcome Back
-            </h1>
-
-            <p className="text-gray-500 text-sm mt-2">
-              Login to Raj Ratna Button Center
-            </p>
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 mx-auto bg-red-100 text-red-600 rounded-2xl flex items-center justify-center text-2xl font-bold">
+            RR
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <h1 className="text-3xl font-bold text-slate-900 mt-5">
+            Welcome Back
+          </h1>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address
-              </label>
-
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="admin@rajratna.com"
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Password
-              </label>
-
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter password"
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold py-3 rounded-xl transition"
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </form>
-
-          <div className="text-center mt-6">
-            <p className="text-sm text-gray-500">
-              Don't have an account?{" "}
-              <Link
-                to="/register"
-                className="text-red-600 font-semibold hover:underline"
-              >
-                Register
-              </Link>
-            </p>
-          </div>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
-              Admin Login
-            </p>
-
-            <p className="text-sm text-center font-semibold text-gray-800 mt-1">
-              admin@rajratna.com
-            </p>
-
-            <p className="text-sm text-center font-semibold text-gray-800">
-              Password: admin123
-            </p>
-          </div>
-
+          <p className="text-slate-500 mt-2">
+            Login to Raj Ratna Button Center
+          </p>
         </div>
+
+        {/* Login Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5"
+        >
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Email Address
+            </label>
+
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="example@gmail.com"
+              required
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100"
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Password
+            </label>
+
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Enter your password"
+              required
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100"
+            />
+          </div>
+
+          {/* Login Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        {/* Register */}
+        <p className="text-center text-sm text-slate-500 mt-6">
+          Don't have an account?{" "}
+          <Link
+            to="/register"
+            className="text-red-600 font-semibold hover:underline"
+          >
+            Create Account
+          </Link>
+        </p>
       </div>
     </div>
   );
